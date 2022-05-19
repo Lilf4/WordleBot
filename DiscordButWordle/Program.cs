@@ -43,6 +43,8 @@ namespace WordleBot
                 Game.WordleNum = (DateTime.UtcNow - Game.startDate).Days;
             }
 
+            if (!Directory.Exists("data\\userdata")) { Directory.CreateDirectory("data\\userdata"); }
+
 
             _client = new DiscordSocketClient();
             _client.Log += Log;
