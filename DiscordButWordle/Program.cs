@@ -112,8 +112,12 @@ namespace WordleBot
                 switch (command)
                 {
                     case "rem":
+                        if (!isOwner(msg.Author.Id))
+                        {
+                            await wrongPrivelege(msg.Channel);
+                            return;
+                        }
                         removeUser(ulong.Parse(msg.Content.Substring(msg.Content.IndexOf(' '), msg.Content.Length - msg.Content.IndexOf(' ')).Trim()));
-
                         return;
                     //Check if user is an owner and close program gracefully
                     case "quit":
@@ -210,7 +214,7 @@ namespace WordleBot
                 if (Player.highStreak < Player.currStreak) { Player.highStreak = Player.currStreak; }
                 Player.SolveCounter[Player.sessionGuesses.Count - 1]++;
                 await msg.Channel.SendMessageAsync("Congrats!! you got the word");
-                Text = "Wordle " + Game.WordleNum + " " + Player.sessionGuesses.Count + "/6\r\n";
+                Text = "Wordle " + (Game.WordleNum + 1) + " " + Player.sessionGuesses.Count + "/6\r\n";
                 for (int i = 0; i < Player.sessionGuesses.Count; i++)
                 {
                     Text += Player.sessionBlocks[i] + "\r\n";
@@ -223,7 +227,7 @@ namespace WordleBot
             {
                 Player.currStreak = 0;
                 await msg.Channel.SendMessageAsync("you have run out of guesses!\r\nthe word was -> " + Game.wordlist[Game.WordleNum]);
-                Text = "Wordle " + Game.WordleNum + "X/6\r\n";
+                Text = "Wordle " + (Game.WordleNum + 1) + "X/6\r\n";
                 for (int i = 0; i < Player.sessionGuesses.Count; i++)
                 {
                     Text += Player.sessionBlocks[i] + "\r\n";
