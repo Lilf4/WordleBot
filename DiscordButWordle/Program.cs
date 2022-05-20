@@ -84,7 +84,7 @@ namespace WordleBot
 
         void savePData(playerdata data)
         {
-            File.WriteAllText("data\\userdata\\" + data.PlayerID + ".json", JsonConvert.SerializeObject(data));
+            File.WriteAllText($"data\\userdata\\{data.PlayerID}.json", JsonConvert.SerializeObject(data));
         }
 
 
@@ -144,7 +144,7 @@ namespace WordleBot
                             await MakeGuess(Player, msg, Word);
                         }
                         return;
-                    //Check if user is an owner and reply with the days word
+                    //reply with the days word
                     case "word":
                         if (!isOwner(msg.Author.Id))
                         {
@@ -175,7 +175,7 @@ namespace WordleBot
                 activeIDs.Remove(id);
                 activePlayers.Remove(id);
             }
-            if (File.Exists("data\\userdata\\" + id + ".json")) { File.Delete("data\\userdata\\" + id + ".json"); }
+            if (File.Exists($"data\\userdata\\{id}.json")) { File.Delete($"data\\userdata\\{id}.json"); }
         }
 
         private async Task RulePage(ISocketMessageChannel channel)
@@ -183,10 +183,10 @@ namespace WordleBot
             EmbedBuilder stats = new EmbedBuilder();
             stats.Color = Color.Red;
             stats.AddField(CreateField("How to play", "Guess the wordle in six tries.\r\nEach guess must be a valid five-letter word.\r\nAfter each guess, the color of the blocks indicate how close your guess was to the word.\r\nThere's a new wordle every day"));
-            stats.AddField(CreateField("Green block " + Game.GreenSquare, "indicates that the letter is in the word and in the correct place"));
-            stats.AddField(CreateField("Yellow block " + Game.YellowSquare, "indicates that the letter is in the word but in a different place"));
-            stats.AddField(CreateField("Black block " + Game.BlackSquare, "indicates that the letter is not in the word"));
-            stats.AddField(CreateField("Time untill next wordle", wordleCountDown().Hours + " hours " + wordleCountDown().Minutes + " minutes " + wordleCountDown().Seconds + " seconds"));
+            stats.AddField(CreateField($"Green block {Game.GreenSquare}", "indicates that the letter is in the word and in the correct place"));
+            stats.AddField(CreateField($"Yellow block {Game.YellowSquare}", "indicates that the letter is in the word but in a different place"));
+            stats.AddField(CreateField($"Black block {Game.BlackSquare}", "indicates that the letter is not in the word"));
+            stats.AddField(CreateField("Time untill next wordle", GetNextTime()));
             stats.AddField(CreateField("To see a list of commands use \"?help\""));
             await channel.SendMessageAsync("", false, stats.Build());
 
@@ -213,7 +213,7 @@ namespace WordleBot
                 Player.lastSolved = Game.WordleNum;
                 if (Player.highStreak < Player.currStreak) { Player.highStreak = Player.currStreak; }
                 Player.SolveCounter[Player.sessionGuesses.Count - 1]++;
-                await msg.Channel.SendMessageAsync("Congrats!! you got the word");
+                await msg.Channel.SendMessageAsync($"Congrats!! you got the word\r\ntime untill next wordle is {GetNextTime()}");
                 Text = "Wordle " + (Game.WordleNum + 1) + " " + Player.sessionGuesses.Count + "/6\r\n";
                 for (int i = 0; i < Player.sessionGuesses.Count; i++)
                 {
@@ -226,7 +226,7 @@ namespace WordleBot
             if (Player.sessionGuesses.Count == 6)
             {
                 Player.currStreak = 0;
-                await msg.Channel.SendMessageAsync("you have run out of guesses!\r\nthe word was -> " + Game.wordlist[Game.WordleNum]);
+                await msg.Channel.SendMessageAsync($"you have run out of guesses!\r\nthe word was -> ||{Game.wordlist[Game.WordleNum]}||\r\ntime untill next wordle is {GetNextTime()}");
                 Text = "Wordle " + (Game.WordleNum + 1) + "X/6\r\n";
                 for (int i = 0; i < Player.sessionGuesses.Count; i++)
                 {
@@ -240,20 +240,25 @@ namespace WordleBot
         {
             if (player.isSolved)
             {
-                await channel.SendMessageAsync("you have already solved todays wordle!\r\n" + "time untill next wordle is " + wordleCountDown().Hours + " hours " + wordleCountDown().Minutes + " minutes " + wordleCountDown().Seconds + " seconds");
+                await channel.SendMessageAsync($"you have already solved todays wordle!\r\ntime untill next wordle is {GetNextTime()}");
                 return false;
             }
             else if (player.sessionGuesses.Count == 6)
             {
-                await channel.SendMessageAsync("you have already used all your guesses today, try again tomorrow\r\n" + "time untill next wordle is " + wordleCountDown().Hours + " hours " + wordleCountDown().Minutes + " minutes " + wordleCountDown().Seconds + " seconds");
+                await channel.SendMessageAsync($"you have already used all your guesses today, try again tomorrow\r\ntime untill next wordle is {GetNextTime()}");
                 return false;
             }
             if (Game.validWord(word))
             {
                 return true;
             }
-            await channel.SendMessageAsync("\"" + word + "\"" + " does not exist in the wordlist");
+            await channel.SendMessageAsync($"\"{word}\" does not exist in the wordlist");
             return false;
+        }
+
+        string GetNextTime()
+        {
+            return wordleCountDown().Hours + " hours " + wordleCountDown().Minutes + " minutes " + wordleCountDown().Seconds + " seconds";
         }
 
         TimeSpan wordleCountDown()
@@ -307,7 +312,7 @@ namespace WordleBot
             playerdata Player;
             if (!activePlayers.ContainsKey(ID))
             {
-                if (!File.Exists("data\\userdata\\" + ID + ".json"))
+                if (!File.Exists($"data\\userdata\\{ID}.json"))
                 {
                     Player = new playerdata()
                     {
@@ -318,7 +323,7 @@ namespace WordleBot
                 }
                 else
                 {
-                    Player = JsonConvert.DeserializeObject<playerdata>(File.ReadAllText("data\\userdata\\" + ID + ".json"));
+                    Player = JsonConvert.DeserializeObject<playerdata>(File.ReadAllText($"data\\userdata\\{ID}.json"));
                 }
                 activePlayers.Add(Player.PlayerID, Player);
                 activeIDs.Add(Player.PlayerID);
@@ -335,7 +340,7 @@ namespace WordleBot
             EmbedBuilder stats = new EmbedBuilder();
             stats.Color = Color.Purple;
             stats.Title = "Stats - " + user.Username;
-            stats.AddField(CreateField("Streak: ", "Max streak: " + Player.highStreak + "\r\nCurrent streak: " + Player.currStreak));
+            stats.AddField(CreateField("Streak: ", $"Max streak: {Player.highStreak}\r\nCurrent streak: {Player.currStreak}"));
             string solves = "";
             for (int i = 0; i < Player.SolveCounter.Length; i++)
             {
