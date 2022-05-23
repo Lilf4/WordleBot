@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
 using Newtonsoft.Json;
+using System.Linq;
 
 namespace WordleBot
 {
@@ -164,8 +165,35 @@ namespace WordleBot
                     case "rules":
                         await RulePage(msg.Channel);
                         return;
+                    case "result":
+                        await msg.Channel.SendMessageAsync(GetResult(GetPlayer(msg.Author.Id)));
+                        return;
                 }
             }
+        }
+
+        private string GetResult(playerdata Player)
+        {
+            string Text = "";
+            if (Player.isSolved)
+            {
+                Text = "Wordle " + (Game.WordleNum + 1) + " " + Player.sessionGuesses.Count + "/6\r\n";
+                for (int i = 0; i < Player.sessionGuesses.Count; i++)
+                {
+                    Text += Player.sessionBlocks[i] + "\r\n";
+                }
+                return Text;
+            }
+            else if (Player.sessionGuesses.Count == 6)
+            {
+                Text = "Wordle " + (Game.WordleNum + 1) + " X/6\r\n";
+                for (int i = 0; i < Player.sessionGuesses.Count; i++)
+                {
+                    Text += Player.sessionBlocks[i] + "\r\n";
+                }
+                return Text;
+            }
+            return "you haven't finished the wordle";
         }
 
         private void removeUser(ulong id)
@@ -232,6 +260,7 @@ namespace WordleBot
                 {
                     Text += Player.sessionBlocks[i] + "\r\n";
                 }
+                await msg.Channel.SendMessageAsync(Text);
                 return;
             }
         }
@@ -341,11 +370,19 @@ namespace WordleBot
             stats.Color = Color.Purple;
             stats.Title = "Stats - " + user.Username;
             stats.AddField(CreateField("Streak: ", $"Max streak: {Player.highStreak}\r\nCurrent streak: {Player.currStreak}"));
+            int highestSolved = Player.SolveCounter.Max();
+
             string solves = "";
             for (int i = 0; i < Player.SolveCounter.Length; i++)
             {
-                solves += (i + 1) + " tries - " + Player.SolveCounter[i] + "\r\n";
+                solves += (i + 1) + " tries] ";
+                for (int j = 0; j < (int)((float)Player.SolveCounter[i] / (float)highestSolved / 2f * 10f); j++)
+                {
+                    solves += Game.GreenSquare;
+                }
+                solves += " " + Player.SolveCounter[i] + "\r\n";
             }
+
             stats.AddField(CreateField("Solves:", solves));
             await channel.SendMessageAsync("", false, stats.Build());
         }
@@ -368,6 +405,7 @@ namespace WordleBot
             page.AddField("g <WORD>", "makes a guess on the current wordle");
             page.AddField("stats", "displays your current statistics");
             page.AddField("help", "displays this page");
+            page.AddField("result", "displays the end result of your last wordle");
             await channel.SendMessageAsync("", false, page.Build());
         }
     }
